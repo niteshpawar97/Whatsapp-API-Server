@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WhatsApp API with Authentication</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 20px; 
+        }
+        .header { 
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            color: white; 
+            padding: 30px; 
+            border-radius: 15px; 
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .auth-section { 
+            background: rgba(255,255,255,0.95); 
+            padding: 40px; 
+            border-radius: 15px; 
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            margin-bottom: 20px; 
+        }
+        .main-content { 
+            display: none; 
+        }
+        .section { 
+            background: rgba(255,255,255,0.95); 
+            padding: 30px; 
+            margin: 20px 0; 
+            border-radius: 15px; 
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        .form-group { 
+            margin: 20px 0; 
+        }
+        label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-weight: 600;
+            color: #333;
+        }
+        input, select, textarea { 
+            width: 100%; 
+            padding: 12px; 
+            border: 2px solid #e1e5e9; 
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #25D366;
+            box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.1);
+        }
+        button { 
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            color: white; 
+            padding: 12px 24px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            margin: 5px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
+        }
+        button:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
+        }
+        .btn-danger { 
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+        }
+        .btn-danger:hover { 
+            box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+        }
+        .qr-container { 
+            text-align: center; 
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        .qr-code { 
+            max-width: 300px; 
+            margin: 15px auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .status { 
+            padding: 8px 12px; 
+            margin: 10px 0; 
+            border-radius: 20px;
+            font-weight: 600;
+            text-align: center;
+            display: inline-block;
+        }
+        .status.ready { 
+            background: #d4edda; 
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+        .status.pending { 
+            background: #fff3cd; 
+            color: #856404;
+            border: 2px solid #ffeaa7;
+        }
+        .status.error { 
+            background: #f8d7da; 
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+        .sessions-list { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); 
+            gap: 20px; 
+        }
+        .session-card { 
+            border: 2px solid #e9ecef; 
+            padding: 20px; 
+            border-radius: 15px;
+            background: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        .session-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        .user-info { 
+            background: linear-gradient(135deg, #e9ecef 0%, #f8f9fa 100%);
+            padding: 20px; 
+            border-radius: 10px; 
+            margin-bottom: 20px;
+            border: 2px solid #dee2e6;
+        }
+        .hidden { 
+            display: none; 
+        }
+        .tabs { 
+            display: flex; 
+            background: #f8f9fa; 
+            border-radius: 10px; 
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .tab { 
+            flex: 1; 
+            padding: 15px; 
+            text-align: center; 
+            cursor: pointer; 
+            border: none; 
+            background: transparent;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .tab.active { 
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
+        }
+        .tab:hover:not(.active) {
+            background: #e9ecef;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #25D366;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+        .notification.show {
+            transform: translateX(0);
+        }
+        .notification.success {
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+        }
+        .notification.error {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+        @media (max-width: 768px) {
+            .container { padding: 10px; }
+            .sessions-list { grid-template-columns: 1fr; }
+            .tabs { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 WhatsApp API Hub</h1>
+            <p>Secure multi-user WhatsApp API with advanced authentication & session management</p>
+        </div>
+
+        <div class="auth-section" id="authSection">
+            <div class="tabs">
+                <button class="tab active" onclick="showLoginTab('user')">👤 User Login</button>
+                <button class="tab" onclick="showLoginTab('admin')">🔑 Admin Login</button>
+            </div>
+            
+            <div id="userLogin">
+                <h3>User Login</h3>
+                <div class="form-group">
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" placeholder="Enter username" autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" placeholder="Enter password" autocomplete="current-password">
+                </div>
+                <button onclick="login('user')" id="userLoginBtn">Login</button>
+            </div>
+            
+            <div id="adminLogin" class="hidden">
+                <h3>Admin Login</h3>
+                <div class="form-group">
+                    <label for="adminUsername">Username:</label>
+                    <input type="text" id="adminUsername" placeholder="Enter admin username" autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="adminPassword">Password:</label>
+                    <input type="password" id="adminPassword" placeholder="Enter admin password" autocomplete="current-password">
+                </div>
+                <button onclick="login('admin')" id="adminLoginBtn">Login as Admin</button>
+            </div>
+        </div>
+
+        <div class="main-content" id="mainContent">
+            <div class="user-info" id="userInfo"></div>
+            
+            <div id="userDashboard">
+                <div class="section">
+                    <h2>📱 Create New Session</h2>
+                    <div class="form-group">
+                        <label for="sessionId">Session ID:</label>
+                        <input type="text" id="sessionId" placeholder="Enter unique session ID (e.g., user-main-session)">
+                    </div>
+                    <button onclick="createSession()" id="createSessionBtn">Create Session</button>
+                </div>
+
+                <div class="section">
+                    <h2>🔄 Active Sessions</h2>
+                    <div id="sessionsList" class="sessions-list"></div>
+                </div>
+
+                <div class="section">
+                    <h2>💬 Send Message</h2>
+                    <div class="form-group">
+                        <label for="msgSessionId">Session ID:</label>
+                        <input type="text" id="msgSessionId" placeholder="Enter session ID">
+                    </div>
+                    <div class="form-group">
+                        <label for="phoneNumber">Phone Number:</label>
+                        <input type="text" id="phoneNumber" placeholder="Enter phone number (e.g., 1234567890)">
+                    </div>
+                    <div class="form-group">
+                        <label for="message">Message:</label>
+                        <textarea id="message" rows="4" placeholder="Type your message here..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="fileInput">Attach File (optional):</label>
+                        <input type="file" id="fileInput" accept="image/*,video/*,audio/*,.pdf,.doc,.docx">
+                    </div>
+                    <button onclick="sendMessage()" id="sendMessageBtn">Send Message</button>
+                </div>
+            </div>
+            
+            <div id="adminDashboard" class="hidden">
+                <div class="section">
+                    <h2>👥 Create User</h2>
+                    <div class="form-group">
+                        <label for="newUsername">Username:</label>
+                        <input type="text" id="newUsername" placeholder="Enter username">
+                    </div>
+                    <div class="form-group">
+                        <label for="newPassword">Password:</label>
+                        <input type="password" id="newPassword" placeholder="Enter password">
+                    </div>
+                    <div class="form-group">
+                        <label for="messageDelay">Message Delay (ms):</label>
+                        <input type="number" id="messageDelay" value="2000" min="1000" max="10000">
+                    </div>
+                    <div class="form-group">
+                        <label for="maxSessions">Max Sessions:</label>
+                        <input type="number" id="maxSessions" value="5" min="1" max="20">
+                    </div>
+                    <button onclick="createUser()" id="createUserBtn">Create User</button>
+                </div>
+                
+                <div class="section">
+                    <h2>📊 All Users</h2>
+                    <div id="usersList"></div>
+                </div>
+            </div>
+            
+            <button onclick="logout()" class="btn-danger">🚪 Logout</button>
+        </div>
+    </div>
+
+    <script>
+        // Store data in memory instead of localStorage
+        let authToken = null;
+        let userRole = null;
+        let currentUser = {};
+        
+        // Check if user is logged in (in real app, this would check with server)
+        // For demo purposes, we'll start with login screen
+        
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => notification.classList.add('show'), 100);
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => document.body.removeChild(notification), 300);
+            }, 3000);
+        }
+        
+        function showLoginTab(type) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (type === 'user') {
+                document.getElementById('userLogin').classList.remove('hidden');
+                document.getElementById('adminLogin').classList.add('hidden');
+            } else {
+                document.getElementById('userLogin').classList.add('hidden');
+                document.getElementById('adminLogin').classList.remove('hidden');
+            }
+        }
+        
+        function setButtonLoading(buttonId, loading = true) {
+            const button = document.getElementById(buttonId);
+            if (loading) {
+                button.innerHTML = '<span class="loading"></span>Processing...';
+                button.disabled = true;
+            } else {
+                button.disabled = false;
+            }
+        }
+        
+        async function login(type) {
+            let username, password, endpoint, buttonId;
+            
+            if (type === 'admin') {
+                username = document.getElementById('adminUsername').value;
+                password = document.getElementById('adminPassword').value;
+                endpoint = '/api/admin/login';
+                buttonId = 'adminLoginBtn';
+            } else {
+                username = document.getElementById('username').value;
+                password = document.getElementById('password').value;
+                endpoint = '/api/login';
+                buttonId = 'userLoginBtn';
+            }
+            
+            if (!username || !password) {
+                showNotification('Please enter username and password', 'error');
+                return;
+            }
+            
+            setButtonLoading(buttonId);
+            
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    authToken = result.token;
+                    userRole = type;
+                    currentUser = {
+                        username: username,
+                        userKey: result.userKey,
+                        apiKey: result.apiKey,
+                        messageDelay: result.messageDelay,
+                        maxSessions: result.maxSessions
+                    };
+                    
+                    showNotification(`Welcome back, ${username}!`);
+                    showMainContent();
+                } else {
+                    showNotification(result.message || 'Login failed', 'error');
+                }
+            } catch (error) {
+                showNotification('Login failed: ' + error.message, 'error');
+            } finally {
+                setButtonLoading(buttonId, false);
+                document.getElementById(buttonId).innerHTML = type === 'admin' ? 'Login as Admin' : 'Login';
+            }
+        }
+        
+        function showMainContent() {
+            document.getElementById('authSection').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+            
+            updateUserInfo();
+            
+            if (userRole === 'admin') {
+                document.getElementById('userDashboard').classList.add('hidden');
+                document.getElementById('adminDashboard').classList.remove('hidden');
+                loadUsers();
+            } else {
+                document.getElementById('userDashboard').classList.remove('hidden');
+                document.getElementById('adminDashboard').classList.add('hidden');
+                loadSessions();
+            }
+        }
+        
+        function updateUserInfo() {
+            const userInfo = document.getElementById('userInfo');
+            if (userRole === 'admin') {
+                userInfo.innerHTML = '<h3>🔑 Admin Dashboard</h3><p>Logged in as Administrator</p>';
+            } else {
+                userInfo.innerHTML = `
+                    <h3>👤 User Dashboard</h3>
+                    <p><strong>Username:</strong> ${currentUser.username}</p>
+                    <p><strong>User Key:</strong> ${currentUser.userKey}</p>
+                    <p><strong>API Key:</strong> ${currentUser.apiKey}</p>
+                    <p><strong>Message Delay:</strong> ${currentUser.messageDelay}ms</p>
+                    <p><strong>Max Sessions:</strong> ${currentUser.maxSessions}</p>
+                `;
+            }
+        }
+        
+        function logout() {
+            authToken = null;
+            userRole = null;
+            currentUser = {};
+            showNotification('Logged out successfully');
+            location.reload();
+        }
+        
+        // User functions
+        async function createSession() {
+            const sessionId = document.getElementById('sessionId').value;
+            if (!sessionId) {
+                showNotification('Please enter a session ID', 'error');
+                return;
+            }
+
+            setButtonLoading('createSessionBtn');
+            
+            try {
+                const response = await fetch('/api/create-session', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ sessionId })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification('Session created successfully!');
+                    document.getElementById('sessionId').value = '';
+                    loadSessions();
+                } else {
+                    showNotification(result.message || 'Failed to create session', 'error');
+                }
+            } catch (error) {
+                showNotification('Error creating session: ' + error.message, 'error');
+            } finally {
+                setButtonLoading('createSessionBtn', false);
+                document.getElementById('createSessionBtn').innerHTML = 'Create Session';
+            }
+        }
+
+        async function loadSessions() {
+            try {
+                const response = await fetch('/api/sessions', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const result = await response.json();
+                
+                const sessionsList = document.getElementById('sessionsList');
+                sessionsList.innerHTML = '';
+                
+                if (result.sessions && result.sessions.length > 0) {
+                    result.sessions.forEach(session => {
+                        const sessionCard = document.createElement('div');
+                        sessionCard.className = 'session-card';
+                        sessionCard.innerHTML = `
+                            <h3>📱 Session: ${session.sessionId}</h3>
+                            <p><strong>Status:</strong> <span class="status ${session.status === 'ready' ? 'ready' : 'pending'}">${session.status}</span></p>
+                            <p><strong>Message Delay:</strong> ${session.messageDelay}ms</p>
+                            ${session.qrCode ? `
+                                <div class="qr-container">
+                                    <p><strong>📱 Scan QR Code with WhatsApp:</strong></p>
+                                    <img src="${session.qrCode}" class="qr-code" alt="QR Code">
+                                    <br><button onclick="refreshQR('${session.sessionId}')">🔄 Refresh QR</button>
+                                </div>
+                            ` : ''}
+                            ${session.info ? `
+                                <p><strong>📞 Number:</strong> ${session.info.number}</p>
+                                <p><strong>👤 Name:</strong> ${session.info.name}</p>
+                            ` : ''}
+                            <div style="margin-top: 15px;">
+                                <input type="number" id="delay_${session.sessionId}" value="${session.messageDelay}" min="1000" max="10000" style="width: 120px; margin-right: 10px;" placeholder="Delay (ms)">
+                                <button onclick="updateDelay('${session.sessionId}')">⏱️ Update Delay</button>
+                            </div>
+                            <button onclick="destroySession('${session.sessionId}')" class="btn-danger" style="margin-top: 10px;">🗑️ Destroy Session</button>
+                        `;
+                        sessionsList.appendChild(sessionCard);
+                    });
+                } else {
+                    sessionsList.innerHTML = '<p>No active sessions. Create your first session above!</p>';
+                }
+            } catch (error) {
+                console.error('Error loading sessions:', error);
+                showNotification('Error loading sessions', 'error');
+            }
+        }
+
+        async function sendMessage() {
+            const sessionId = document.getElementById('msgSessionId').value;
+            const phoneNumber = document.getElementById('phoneNumber').value;
+            const message = document.getElementById('message').value;
+            const fileInput = document.getElementById('fileInput');
+            
+            if (!sessionId || !phoneNumber || !message) {
+                showNotification('Please fill in all required fields', 'error');
+                return;
+            }
+
+            setButtonLoading('sendMessageBtn');
+            
+            const formData = new FormData();
+            formData.append('sessionId', sessionId);
+            formData.append('number', phoneNumber);
+            formData.append('message', message);
+            
+            if (fileInput.files[0]) {
+                formData.append('file', fileInput.files[0]);
+            }
+
+            try {
+                const response = await fetch('/api/send-message', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${authToken}` },
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification('Message sent successfully!');
+                    document.getElementById('message').value = '';
+                    document.getElementById('fileInput').value = '';
+                } else {
+                    showNotification(result.message || 'Failed to send message', 'error');
+                }
+            } catch (error) {
+                showNotification('Error sending message: ' + error.message, 'error');
+            } finally {
+                setButtonLoading('sendMessageBtn', false);
+                document.getElementById('sendMessageBtn').innerHTML = 'Send Message';
+            }
+        }
+
+        async function updateDelay(sessionId) {
+            const delay = document.getElementById(`delay_${sessionId}`).value;
+            
+            if (!delay || delay < 1000) {
+                showNotification('Delay must be at least 1000ms', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/update-delay', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ sessionId, delay })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification('Delay updated successfully!');
+                } else {
+                    showNotification(result.message || 'Failed to update delay', 'error');
+                }
+            } catch (error) {
+                showNotification('Error updating delay: ' + error.message, 'error');
+            }
+        }
+
+        async function refreshQR(sessionId) {
+            try {
+                const response = await fetch(`/api/refresh-qr/${sessionId}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    showNotification('QR code refreshed!');
+                    loadSessions();
+                } else {
+                    showNotification(result.message || 'Failed to refresh QR', 'error');
+                }
+            } catch (error) {
+                showNotification('Error refreshing QR: ' + error.message, 'error');
+            }
+        }
+
+        async function destroySession(sessionId) {
+            if (!confirm('Are you sure you want to destroy this session?')) return;
+            
+            try {
+                const response = await fetch(`/api/destroy-session/${sessionId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification('Session destroyed successfully!');
+                } else {
+                    showNotification(result.message || 'Failed to destroy session', 'error');
+                }
+                loadSessions();
+            } catch (error) {
+                showNotification('Error destroying session: ' + error.message, 'error');
+            }
+        }
+
+        // Admin functions
+        async function createUser() {
+            const username = document.getElementById('newUsername').value;
+            const password = document.getElementById('newPassword').value;
+            const messageDelay = document.getElementById('messageDelay').value;
+            const maxSessions = document.getElementById('maxSessions').value;
+            
+            if (!username || !password) {
+                showNotification('Please enter username and password', 'error');
+                return;
+            }
+
+            setButtonLoading('createUserBtn');
+            
+            try {
+                const response = await fetch('/api/admin/create-user', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ 
+                        username, 
+                        password, 
+                        messageDelay: parseInt(messageDelay), 
+                        maxSessions: parseInt(maxSessions) 
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification('User created successfully!');
+                    document.getElementById('newUsername').value = '';
+                    document.getElementById('newPassword').value = '';
+                    document.getElementById('messageDelay').value = '2000';
+                    document.getElementById('maxSessions').value = '5';
+                    loadUsers();
+                } else {
+                    showNotification(result.message || 'Failed to create user', 'error');
+                }
+            } catch (error) {
+                showNotification('Error creating user: ' + error.message, 'error');
+            } finally {
+                setButtonLoading('createUserBtn', false);
+                document.getElementById('createUserBtn').innerHTML = 'Create User';
+            }
+        }
+
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/admin/users', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const result = await response.json();
+                
+                const usersList = document.getElementById('usersList');
+                usersList.innerHTML = '';
+                
+                if (result.users && result.users.length > 0) {
+                    result.users.forEach(user => {
+                        const userCard = document.createElement('div');
+                        userCard.className = 'session-card';
+                        userCard.innerHTML = `
+                            <h3>👤 User: ${user.username}</h3>
+                            <p><strong>🔑 User Key:</strong> ${user.userKey}</p>
+                            <p><strong>🔐 API Key:</strong> ${user.apiKey}</p>
+                            <p><strong>⏱️ Message Delay:</strong> ${user.messageDelay}ms</p>
+                            <p><strong>📊 Max Sessions:</strong> ${user.maxSessions}</p>
+                            <p><strong>Status:</strong> <span class="status ${user.isActive ? 'ready' : 'error'}">${user.isActive ? 'Active' : 'Inactive'}</span></p>
+                            <p><strong>📅 Created:</strong> ${new Date(user.createdAt).toLocaleString()}</p>
+                        `;
+                        usersList.appendChild(userCard);
+                    });
+                } else {
+                    usersList.innerHTML = '<p>No users found. Create your first user above!</p>';
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                showNotification('Error loading users', 'error');
+            }
+        }
+
+        // Auto-refresh sessions every 30 seconds for users
+        setInterval(() => {
+            if (userRole === 'user' && document.getElementById('mainContent').style.display !== 'none') {
+                loadSessions();
+            }
+        }, 30000);
+
+        // Add Enter key support for login forms
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                if (!document.getElementById('authSection').style.display) {
+                    const activeTab = document.querySelector('.tab.active');
+                    if (activeTab.textContent.includes('User Login')) {
+                        login('user');
+                    } else {
+                        login('admin');
+                    }
+                }
+            }
+        });
+        // Initial setup
+        document.getElementById('mainContent').style.display = 'none';
+        document.getElementById('authSection').style.display = 'block';
+        showLoginTab('user'); // Show user login tab by default
+    </script>
+</body>
+</html>
+<!-- End of file: public/index.html -->
